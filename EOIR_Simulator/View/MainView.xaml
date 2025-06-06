@@ -96,7 +96,7 @@
             </Border>
 
             <StackPanel Grid.Row="1">
-                
+                <Border BorderBrush="Gray" BorderThickness="1" Padding="8" Margin="0,0,0,8">
                     <StackPanel>
                         <TextBlock Text="서보 제어" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,4"/>
                         <Grid HorizontalAlignment="Center" Margin="0,20">
@@ -114,8 +114,11 @@
                             <RepeatButton Content="↓" Command="{Binding MoveCommand}" CommandParameter="Down" Grid.Row="1" Grid.Column="1" Width="50" Height="50" Margin="4"/>
                             <RepeatButton Content="→" Command="{Binding MoveCommand}" CommandParameter="Right" Grid.Row="1" Grid.Column="2" Width="50" Height="50" Margin="4"/>
                         </Grid>
+                    </StackPanel>
+                </Border>
 
-                    <StackPanel HorizontalAlignment="Center" Margin="0,20">
+                <Border BorderBrush="Gray" BorderThickness="1" Padding="8" Margin="0,0,0,8">
+                    <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="전처리 옵션 선택" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,4"/>
                         <ComboBox Width="160"
                                   Height="40"
@@ -133,22 +136,23 @@
                             <ComboBoxItem Content="열화상/IR" />
                         </ComboBox>
                     </StackPanel>
-                </StackPanel>
+                </Border>
 
                 <TextBlock Text="Log:" FontWeight="Bold" Margin="8,8,8,4"/>
-                <!--<ListBox Height="400" Margin="8" BorderBrush="Gray" BorderThickness="1" />-->
-                <ListBox x:Name="LogListBox"
-                         ItemsSource="{Binding TcpLogs}"
-                         Height="400" Margin="8"
-                         FontFamily="Consolas" FontSize="12"
-                         BorderBrush="Gray" BorderThickness="1"
-                         VerticalContentAlignment="Top">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel />
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                </ListBox>
+                <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,4">
+                    <!--<ListBox Height="400" Margin="8" BorderBrush="Gray" BorderThickness="1" />-->
+                    <ListBox x:Name="LogListBox"
+                             ItemsSource="{Binding TcpLogs}"
+                             Height="400" Margin="8"
+                             FontFamily="Consolas" FontSize="12"
+                             VerticalContentAlignment="Top">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                    </ListBox>
+                </Border>
 
             </StackPanel>
         </Grid>
@@ -192,18 +196,20 @@
                     </StackPanel>
                 </Grid>
             </Border>
-            <TextBlock Text="Detection Result:" FontWeight="Bold" Margin="8,8,8,4"/>
-            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,4">
-                <DataGrid Margin="4" Height="160" ItemsSource="{Binding Video.Objects}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Cls" Binding="{Binding Class}" Width="50"/>
-                        <DataGridTextColumn Header="X" Binding="{Binding X}" Width="50"/>
-                        <DataGridTextColumn Header="Y" Binding="{Binding Y}" Width="50"/>
-                        <DataGridTextColumn Header="W" Binding="{Binding W}" Width="50"/>
-                        <DataGridTextColumn Header="H" Binding="{Binding H}" Width="50"/>
-                        <DataGridTextColumn Header="Conf" Binding="{Binding Confidence, StringFormat=F2}" Width="*"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,4" Padding="4">
+                <StackPanel>
+                    <TextBlock Text="Detection Result:" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <DataGrid Height="160" ItemsSource="{Binding Video.Objects}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Cls" Binding="{Binding Class}" Width="50"/>
+                            <DataGridTextColumn Header="X" Binding="{Binding X}" Width="50"/>
+                            <DataGridTextColumn Header="Y" Binding="{Binding Y}" Width="50"/>
+                            <DataGridTextColumn Header="W" Binding="{Binding W}" Width="50"/>
+                            <DataGridTextColumn Header="H" Binding="{Binding H}" Width="50"/>
+                            <DataGridTextColumn Header="Conf" Binding="{Binding Confidence, StringFormat=F2}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
             </Border>
         </StackPanel>
     </Grid>
