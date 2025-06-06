@@ -70,7 +70,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,8" Padding="8">
+            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,8" Padding="8" Width="280" Height="100" HorizontalAlignment="Center">
                 <StackPanel>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,6">
@@ -82,21 +82,22 @@
                         <TextBlock Text="운용 선택" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <Button Content="Run" Command="{Binding SetManualModeCommand}" IsEnabled="{Binding IsTcpConnected}" Width="70"/>
                     </StackPanel>
+                </StackPanel>
+            </Border>
 
-                    
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,22.5">
-                        <TextBlock Text="모드 선택 :" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <ComboBox SelectedValue="{Binding Mode, Mode=TwoWay}" SelectedValuePath="Tag" Width="120" Height="30" VerticalContentAlignment="Center">
-                            <ComboBoxItem Content="수동 모드 (기본)" Tag="{x:Static model:ModeNum.Manual}"/>
-                            <ComboBoxItem Content="스캔 모드" Tag="{x:Static model:ModeNum.Scan}"/>
-                            <ComboBoxItem Content="추적 모드 (자동)" Tag="{x:Static model:ModeNum.Track}" IsEnabled="False"/>
-                        </ComboBox>
-                    </StackPanel>
+            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,8" Padding="8" Width="280" Height="100" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,22.5">
+                    <TextBlock Text="모드 선택 :" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox SelectedValue="{Binding Mode, Mode=TwoWay}" SelectedValuePath="Tag" Width="120" Height="30" VerticalContentAlignment="Center">
+                        <ComboBoxItem Content="수동 모드 (기본)" Tag="{x:Static model:ModeNum.Manual}"/>
+                        <ComboBoxItem Content="스캔 모드" Tag="{x:Static model:ModeNum.Scan}"/>
+                        <ComboBoxItem Content="추적 모드 (자동)" Tag="{x:Static model:ModeNum.Track}" IsEnabled="False"/>
+                    </ComboBox>
                 </StackPanel>
             </Border>
 
             <StackPanel Grid.Row="1">
-                <Border BorderBrush="Gray" BorderThickness="1" Padding="8" Margin="0,0,0,8">
+                <Border BorderBrush="Gray" BorderThickness="1" Padding="8" Margin="0,0,0,8" Width="280" Height="180" HorizontalAlignment="Center">
                     <StackPanel>
                         <TextBlock Text="서보 제어" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,4"/>
                         <Grid HorizontalAlignment="Center" Margin="0,20">
@@ -159,28 +160,28 @@
 
         <!-- 중앙 오른쪽 상태 및 결과 -->
         <StackPanel Grid.Column="1" Margin="4">
-            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,4">
-                <StackPanel Orientation="Horizontal" Margin="12,4">
-                    <Ellipse Width="12" Height="12" Fill="{Binding Connection.TcpStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,6,0"/>
-                    <TextBlock Text="{Binding Connection.TcpStatus}" FontSize="13" FontWeight="Bold"/>
-                </StackPanel>
-            </Border>
-            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,4">
-                <StackPanel Orientation="Horizontal" Margin="12,4">
-                    <Ellipse Width="12" Height="12" Fill="{Binding Connection.UdpStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,6,0"/>
-                    <TextBlock Text="{Binding Connection.UdpStatus}" FontSize="13" FontWeight="Bold"/>
-                </StackPanel>
-            </Border>
-            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,4">
+            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,4" Width="280" Height="100" HorizontalAlignment="Center" Padding="8">
                 <StackPanel>
-                    <TextBlock Text="현재 모드" HorizontalAlignment="Center" Margin="0,4"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4" HorizontalAlignment="Center">
+                        <Ellipse Width="12" Height="12" Fill="{Binding Connection.TcpStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,6,0"/>
+                        <TextBlock Text="{Binding Connection.TcpStatus}" FontSize="13" FontWeight="Bold"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Ellipse Width="12" Height="12" Fill="{Binding Connection.UdpStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,6,0"/>
+                        <TextBlock Text="{Binding Connection.UdpStatus}" FontSize="13" FontWeight="Bold"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,4" Width="280" Height="100" HorizontalAlignment="Center" Padding="8">
+                <StackPanel>
+                    <TextBlock Text="현재 모드" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                     <Border BorderBrush="Gray" BorderThickness="1" Margin="8" Height="40">
                         <TextBlock Text="{Binding Mode}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </StackPanel>
             </Border>
            
-            <Border Height="180" BorderBrush="Gray" BorderThickness="1" Margin="2,2,4,4">
+            <Border Height="180" Width="280" HorizontalAlignment="Center" BorderBrush="Gray" BorderThickness="1" Margin="2,2,4,4">
                 <Grid>
                     <h:HelixViewport3D ShowCoordinateSystem="False" ZoomExtentsWhenLoaded="True" Background="Black">
                         <h:SunLight/>
