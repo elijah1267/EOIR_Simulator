@@ -1,0 +1,557 @@
+﻿<Window x:Class="EOIR_Simulator.View.MainView"
+        Loaded="Window_Loaded"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:oxy="http://oxyplot.org/wpf"
+        xmlns:model="clr-namespace:EOIR_Simulator.Model"
+        xmlns:utils="clr-namespace:EOIR_Simulator.Util"
+        xmlns:h="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf"
+        xmlns:f="clr-namespace:FluentWpfChromes;assembly=FluentWpfChromes"
+        WindowStyle="None"
+        AllowsTransparency="False"
+        Background="Transparent"
+        
+        mc:Ignorable="d"
+        Title="EO/IR System" Height="800" Width="1200" MinHeight="800" MinWidth="1050">
+
+    <f:AeroGlassChrome.AeroGlassChrome>
+        <f:AeroGlassChrome/>
+    </f:AeroGlassChrome.AeroGlassChrome>
+
+    <!-- ========== Resources ========== -->
+    <Window.Resources>
+        <utils:BoolToBrushConverter x:Key="BoolToBrush"/>
+        <utils:NullToBoolConverter  x:Key="NullToBoolConv"/>
+        <utils:AndConverter  x:Key="AndConverter"/>
+        <utils:ClassIdToLabelConverter  x:Key="ClassIdToLabelConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+
+    <!-- ========== Root Grid : 2×2 ========== -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="4*"/>
+            <!-- 좌 : 영상 + 제어 -->
+            <ColumnDefinition Width="1.4*"/>
+            <!-- 우 : 상태 + 로그 + 2D -->
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition Height="4*"/>
+            <!-- 상단 -->
+            <RowDefinition Height="1.5*"/>
+            <!-- 하단 -->
+        </Grid.RowDefinitions>
+
+        <!-- ───── 타이틀바 (아이콘 + 드래그 + 컨트롤 버튼) ───── -->
+        <Grid Grid.Row="0" Grid.ColumnSpan="2"
+              Background="#22000000"
+              MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+              Height="32">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <!-- 아이콘 -->
+                <ColumnDefinition/>
+                <!-- 타이틀 -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- 버튼들 -->
+            </Grid.ColumnDefinitions>
+
+            <!-- 앱 아이콘 -->
+            <Image Source="C:\workspace_WPF\EOIR_Simulator_msb\EOIR_Simulator\phx_icon.ico"
+           Width="20" Height="20"
+           Margin="10,0"
+           VerticalAlignment="Center"/>
+
+            <!-- 타이틀 텍스트 -->
+            <TextBlock Grid.Column="1"
+               Text="EO/IR SYSTEM"
+               VerticalAlignment="Center"
+               FontWeight="Bold"
+               Foreground="White"
+               FontSize="14"/>
+
+            <!-- 우측 제어 버튼들 -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                <Button Width="32" Height="28" Content="─" Click="MinimizeButton_Click"
+                Background="Transparent" Foreground="White" BorderBrush="Transparent" ToolTip="Minimize"/>
+                <Button Width="32" Height="28" Content="□" Click="MaxRestoreButton_Click"
+                Background="Transparent" Foreground="White" BorderBrush="Transparent" ToolTip="Maximize/Restore"/>
+                <Button Width="32" Height="28" Content="X" Click="CloseButton_Click"
+                Background="Transparent" Foreground="White" BorderBrush="Transparent" ToolTip="Close"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ───── 좌상단 │ 영상 ───── -->
+        <Grid Grid.Row="1" Grid.Column="0" Margin="4">
+
+            <!-- ① 영상 -->
+            <Image Source="{Binding Video.CurrentFrame}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" StretchDirection="Both"/>
+
+            <Canvas Width="20" Height="20"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            IsHitTestVisible="False">
+                <!-- 가로선 -->
+                <Line X1="0"  Y1="10"  X2="20" Y2="10"
+              Stroke="#FF5722"    StrokeThickness="2"
+              SnapsToDevicePixels="True"/>
+                <!-- 세로선 -->
+                <Line X1="10" Y1="0"   X2="10" Y2="20"
+              Stroke="#FF5722"    StrokeThickness="2"
+              SnapsToDevicePixels="True"/>
+            </Canvas>
+
+            <!-- ② 각도 표시용 슬라이더 겹치기 -->
+            <Grid IsHitTestVisible="False">
+                <!-- 입력 막기 -->
+                <!-- 가로 슬라이더 : Yaw (-90° ~ +90°) -->
+                <Slider Minimum="-90" Maximum="90"
+                        Value="{Binding Angle.YawDeg, Mode=OneWay}"
+                        Height="30"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        Margin="15,0,33,5"
+                        Style="{StaticResource YawSliderStyle}"
+                        IsHitTestVisible="False"/>
+                <!-- 세로 슬라이더 : Pitch (-45° ~ +45°) -->
+                <Slider Minimum="-90" Maximum="90"
+                        Value="{Binding Angle.PitchDeg, Mode=OneWay}"
+                        Orientation="Vertical"
+                        Width="40"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Stretch"
+                        Margin="0,15,5,33"
+                        Style="{StaticResource PitchSliderStyle}"
+                        IsHitTestVisible="False"/>
+            </Grid>
+        </Grid>
+
+        <!-- ───── 좌하단 │ 사용자 입력 & 모터 3D ───── -->
+        <Grid Grid.Row="2" Grid.ColumnSpan="2" Grid.Column="0" Margin="4,0,4,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="1.3*"/>
+                <ColumnDefinition Width="1.0*"/>
+                <ColumnDefinition Width="1.3*"/>
+                <ColumnDefinition Width="1.5*"/>
+                <ColumnDefinition Width="2.8*"/>
+            </Grid.ColumnDefinitions>
+            <!-- Radar Plot -->
+            <Border Grid.Column="0" Margin="2">
+                <Canvas Name="RadarCanvas" Width="300" Height="200" Background="Black" ClipToBounds="True"/>
+            </Border>
+
+            <!-- 카메라 & 모드 -->
+            <Border Grid.Column="1" Margin="2" Background="#CCFFFFFF" CornerRadius="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- ① 모드 -->
+                    <StackPanel Grid.Row="0" Margin="0,6,0,0">
+                        <TextBlock Text="모드"
+                       FontWeight="Bold" FontSize="15"
+                       HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                        <ComboBox Width="115" HorizontalAlignment="Center"
+                      SelectedValue="{Binding Mode, Mode=TwoWay}"
+                      SelectedValuePath="Tag"
+                      IsEnabled="{Binding Connection.AreOtherButtonsEnabled}">
+                            <ComboBoxItem Content="수동 모드(기본)" Tag="{x:Static model:ModeNum.Manual}"/>
+                            <ComboBoxItem Content="스캔 모드" Tag="{x:Static model:ModeNum.Scan}"/>
+                            <ComboBoxItem Content="추적 모드(자동)" Tag="{x:Static model:ModeNum.Track}" IsEnabled="False"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- ② 카메라 선택 -->
+                    <StackPanel Grid.Row="1">
+                        <TextBlock Text="카메라 선택"
+                       FontWeight="Bold" FontSize="15"
+                       HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Style="{StaticResource AcrylicButtonStyle}" Content="EO" Width="55" Height="25" Margin="0,0,4,0"
+                        Command="{Binding SetEOCamCommand}"
+                        IsEnabled="{Binding Connection.AreOtherButtonsEnabled}"/>
+                            <Button Style="{StaticResource AcrylicButtonStyle}" Content="IR" Width="55" Height="25"
+                        Command="{Binding SetIRCamCommand}"
+                        IsEnabled="{Binding Connection.AreOtherButtonsEnabled}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ③ 캡처 도구 -->
+                    <StackPanel Grid.Row="2" VerticalAlignment="Top">
+                        <TextBlock Text="캡처 도구"
+                       FontWeight="Bold" FontSize="15"
+                       HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                        <Button Style="{StaticResource AcrylicButtonStyle}"
+                                    Content="영상 캡처"
+                                    Width="80" Height="25" HorizontalAlignment="Center"
+                                    Command="{Binding Video.CaptureCommand}" 
+                                    IsEnabled="{Binding Connection.AreOtherButtonsEnabled}" />
+                        </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 전처리 옵션 (세로) -->
+            <Border Grid.Column="2" Margin="2" Background="#CCFFFFFF" CornerRadius="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- ① 제목 -->
+                    <TextBlock Grid.Row="0"
+                   Text="전처리"
+                   FontWeight="Bold"
+                   FontSize="15"
+                   Margin="0,6,0,4"
+                   HorizontalAlignment="Center"/>
+                    <!-- 물음표 버튼 (TextBlock or Button 가능) -->
+                    <Button Content="?"
+        Width="15" Height="15"
+        FontWeight="Bold"
+        FontSize="8"
+        Margin="6,3,6,0"
+        VerticalAlignment="Center"
+        HorizontalAlignment="Right"
+        ToolTipService.ShowDuration="60000">
+                        <Button.ToolTip>
+                            <TextBlock>
+            윤곽선 강화: 객체의 외곽선을 강조해 검출을 용이하게 합니다.
+            <LineBreak/>
+            대조비 개선: 어두운 영상의 명암을 조정해 객체 식별을 쉽게 합니다.
+            <LineBreak/>
+            안개 제거: 흐릿한 영상을 선명하게 만들어 감시 성능을 향상시킵니다.
+                            </TextBlock>
+                        </Button.ToolTip>
+                    </Button>
+
+                    <!-- ② 체크박스 옵션들 (StackPanel → Grid 중앙 정렬, 내부는 좌정렬) -->
+                    <StackPanel Grid.Row="1"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                        <CheckBox Content="윤곽선 강화" Margin="0,5,0,0"
+                      IsChecked="{Binding PrepEdge}"
+                      IsEnabled="{Binding Connection.AreOtherButtonsEnabled}"/>
+                        <CheckBox Content="대조비 개선" Margin="0,20,0,0"
+                      IsChecked="{Binding PrepContrast}"
+                      IsEnabled="{Binding Connection.AreOtherButtonsEnabled}"/>
+                        <CheckBox Content="안개 제거" Margin="0,20,0,0"
+                      IsChecked="{Binding PrepDehazing}"
+                      IsEnabled="{Binding Connection.AreOtherButtonsEnabled}"/>
+                    </StackPanel>
+
+                    <!-- ③ 적용 버튼 -->
+                    <Button Grid.Row="2"
+                Content="적용"
+                Width="60" Height="25" Margin="0,8,0,20"
+                HorizontalAlignment="Center"
+                Style="{StaticResource AcrylicButtonStyle}"
+                Command="{Binding SendPrepCommand}"
+                IsEnabled="{Binding Connection.AreOtherButtonsEnabled}"/>
+                </Grid>
+            </Border>
+
+
+            <!-- 서보 제어 -->
+            <Border Grid.Column="3" Margin="2" Background="#CCFFFFFF" CornerRadius="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- ① 서보 제어 제목 -->
+                    <TextBlock Grid.Row="0"
+                   Text="서보 제어"
+                   FontWeight="Bold"
+                   FontSize="15"
+                   Margin="0,6,0,6"
+                   HorizontalAlignment="Center"/>
+
+                    <!-- ② 방향키 -->
+                    <Grid Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <RepeatButton Style="{StaticResource AcrylicRepeatButtonStyle}" Content="↑"
+                          Grid.Row="0" Grid.Column="1" Width="36" Height="36"
+                          Delay="400" Interval="120"
+                          Command="{Binding DirectionCommand}" CommandParameter="Up"
+                          Margin="2">
+                            <RepeatButton.IsEnabled>
+                                <MultiBinding Converter="{StaticResource AndConverter}">
+                                    <Binding Path="IsManualMode"/>
+                                    <Binding Path="Connection.AreOtherButtonsEnabled"/>
+                                </MultiBinding>
+                            </RepeatButton.IsEnabled>
+                        </RepeatButton>
+                        <RepeatButton Style="{StaticResource AcrylicRepeatButtonStyle}" Content="←"
+                          Grid.Row="1" Grid.Column="0" Width="36" Height="36"
+                          Delay="400" Interval="120"
+                          Command="{Binding DirectionCommand}" CommandParameter="Right"
+                          Margin="2">
+                            <RepeatButton.IsEnabled>
+                                <MultiBinding Converter="{StaticResource AndConverter}">
+                                    <Binding Path="IsManualMode"/>
+                                    <Binding Path="Connection.AreOtherButtonsEnabled"/>
+                                </MultiBinding>
+                            </RepeatButton.IsEnabled>
+                        </RepeatButton>
+                        <RepeatButton Style="{StaticResource AcrylicRepeatButtonStyle}" Content="↓"
+                          Grid.Row="1" Grid.Column="1" Width="36" Height="36"
+                          Delay="400" Interval="120"
+                          Command="{Binding DirectionCommand}" CommandParameter="Down"
+                          Margin="2">
+                            <RepeatButton.IsEnabled>
+                                <MultiBinding Converter="{StaticResource AndConverter}">
+                                    <Binding Path="IsManualMode"/>
+                                    <Binding Path="Connection.AreOtherButtonsEnabled"/>
+                                </MultiBinding>
+                            </RepeatButton.IsEnabled>
+                        </RepeatButton>
+                        <RepeatButton Style="{StaticResource AcrylicRepeatButtonStyle}" Content="→"
+                          Grid.Row="1" Grid.Column="2" Width="36" Height="36"
+                          Delay="400" Interval="120"
+                          Command="{Binding DirectionCommand}" CommandParameter="Left"
+                          Margin="2">
+                            <RepeatButton.IsEnabled>
+                                <MultiBinding Converter="{StaticResource AndConverter}">
+                                    <Binding Path="IsManualMode"/>
+                                    <Binding Path="Connection.AreOtherButtonsEnabled"/>
+                                </MultiBinding>
+                            </RepeatButton.IsEnabled>
+                        </RepeatButton>
+                    </Grid>
+
+                    <!-- ③ 초기화 버튼 -->
+                    <Button Grid.Row="2"
+                            Content="모터 초기화"
+                            Style="{StaticResource AcrylicButtonStyle}"
+                            Width="80" Height="25" Margin="0,8,0,20"
+                            HorizontalAlignment="Center"
+                            Command="{Binding SendInitCommand}">    
+                        <Button.IsEnabled>
+                            <MultiBinding Converter="{StaticResource AndConverter}">
+                                <Binding Path="IsManualMode"/>
+                                <Binding Path="Connection.AreOtherButtonsEnabled"/>
+                            </MultiBinding>
+                        </Button.IsEnabled>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Tracking ID 선택 -->
+            <Border Grid.Column="4" Margin="2" Background="#CCFFFFFF" CornerRadius="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 제목 -->
+                    <TextBlock Grid.Row="0"
+                   Text="추적 ID 선택"
+                   FontWeight="Bold"
+                   FontSize="15"
+                   HorizontalAlignment="Center"
+                   Margin="0,6,0,0"/>
+
+                    <!-- ListBox -->
+                    <DataGrid Grid.Row="1"
+          ItemsSource="{Binding Detections}"
+          SelectedItem="{Binding SelectedObj}"
+          AutoGenerateColumns="False"
+          HeadersVisibility="Column"
+          IsReadOnly="True"
+          SelectionMode="Single"
+          Margin="8"
+          RowHeaderWidth="0"
+          HorizontalScrollBarVisibility="Disabled">
+
+                        <DataGrid.Resources>
+                            <!-- ① 셀 자체를 가운데 배치 -->
+                            <Style TargetType="DataGridCell">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="VerticalContentAlignment"   Value="Center"/>
+                            </Style>
+
+                            <!-- ② 헤더 가운데 (이미 적용돼 있지만 함께 두면 깔끔) -->
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="VerticalContentAlignment"   Value="Center"/>
+                            </Style>
+
+                            <!-- ③ 텍스트 정렬까지 확실히 중앙 -->
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment"       Value="Center"/>
+                            </Style>
+                        </DataGrid.Resources>
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Id"
+                            Binding="{Binding TrackingId}"
+                            Width="1*"/>
+
+                            <DataGridTextColumn Header="Class"
+                            Binding="{Binding Class,
+                                      Converter={StaticResource ClassIdToLabelConverter}}"
+                            Width="2*"/>
+
+                            <DataGridTextColumn Header="Conf(%)"
+                            Binding="{Binding Confidence, StringFormat={}{0:P0}}"
+                            Width="1.7*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- 추적 버튼 -->
+                    <Button Grid.Row="2" Height="25"
+                Content="추적"
+                Command="{Binding SendTrackCommand}"
+                Margin="0,0,8,10"
+                IsEnabled="{Binding SelectedObj, Converter={StaticResource NullToBoolConv}}"
+                Style="{StaticResource AcrylicButtonStyle}"
+                HorizontalAlignment="Right"
+                Width="60"/>
+                </Grid>
+            </Border>
+
+            <!-- Logs -->
+            <Border Grid.Column="5" Margin="2" Background="#CCFFFFFF" CornerRadius="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- CMD Log 텍스트 -->
+                        <RowDefinition Height="*"/>
+                        <!-- 로그창 -->
+                    </Grid.RowDefinitions>
+
+                    <!-- 제목 -->
+                    <TextBlock Text="CMD Log" 
+                   FontWeight="Bold"
+                   Padding="4"
+                   FontSize="15"
+                   HorizontalAlignment="Center"/>
+
+                    <!-- 로그창 -->
+                    <ListBox x:Name="LogListBox"
+                 Margin="5,0,5,5"
+                 Grid.Row="1"
+                 ItemsSource="{Binding TcpLogs}"
+                 Background="Black"
+                 Foreground="White"
+                 FontFamily="Consolas"
+                 FontSize="12"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 IsSynchronizedWithCurrentItem="True"   
+                 Style="{StaticResource RoundedListBoxStyle}"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ───── 우상단 │ State + Connect/Run + Logs ───── -->
+        <Grid Grid.Row="1" Grid.Column="1" Margin="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- State + Connect/Run (한 박스) -->
+            <Border BorderThickness="1" Padding="8" Grid.Row="0" Background="#CCFFFFFF" CornerRadius="10">
+
+                <StackPanel>
+                    <!-- Connect / Run -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,6">
+                        <Button Height="25" Style="{StaticResource AcrylicButtonStyle}" Content="{Binding Connection.ConnectButtonText}" Width="70" Margin="2" Command="{Binding Connection.ConnectCommand}" IsEnabled="{Binding Connection.IsConnectEnabled}"/>
+                        <Button Height="25" Style="{StaticResource AcrylicButtonStyle}" Content="{Binding Connection.RunButtonText}" Width="70" Margin="2" Command="{Binding Connection.RunCommand}" IsEnabled="{Binding Connection.IsRunEnabled}"/>
+                    </StackPanel>
+
+                    <!-- EO/IR System State -->
+                    <TextBlock Text="EO/IR System State" FontWeight="Bold" FontSize="15"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,6">
+                        <Ellipse Width="12" Height="12" Fill="{Binding Connection.StateColor}" Stroke="Black" StrokeThickness="1" Margin="0,2,4,0"/>
+                        <TextBlock Text="{Binding Connection.StateString}" FontSize="14"/>
+                    </StackPanel>
+
+                    <!-- Device State -->
+                    <TextBlock Text="Device State" FontWeight="Bold" FontSize="15"/>
+                    <StackPanel Orientation="Vertical" Margin="0,2,0,6">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                            <Ellipse Width="12" Height="12" Fill="{Binding Connection.TpuStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,4,0"/>
+                            <TextBlock Text="TPU" FontSize="14"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                            <Ellipse Width="12" Height="12" Fill="{Binding Connection.CamStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,4,0"/>
+                            <TextBlock Text="CAM" FontSize="14"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                            <Ellipse Width="12" Height="12" Fill="{Binding Connection.RadarStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,4,0"/>
+                            <TextBlock Text="RADAR" FontSize="14"/>
+                        </StackPanel>
+                    </StackPanel>
+ 
+                    <!-- Network State -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Network State" FontWeight="Bold" FontSize="15"/>
+                        <!--<TextBlock Text="{Binding Video.Latency, StringFormat='Latency: {0:F1} ms'}"
+                                   FontSize="12" Foreground="White" Margin="4,0,0,0"/>-->
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical" Margin="0,2,0,6">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                            <Ellipse Width="12" Height="12" Fill="{Binding Connection.TcpStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,4,0"/>
+                            <TextBlock Text="STATUS" FontSize="14"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2" Visibility="{Binding Connection.ShowCmdUdp, Converter={StaticResource BoolToVis}}">
+                            <Ellipse Width="12" Height="12" Fill="{Binding Connection.CmdStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,4,0"/>
+                            <TextBlock Text="CONTROL" FontSize="14"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding Connection.ShowCmdUdp, Converter={StaticResource BoolToVis}}">
+                            <Ellipse Width="12" Height="12" Fill="{Binding Connection.UdpStateColor}" Stroke="Black" StrokeThickness="1" Margin="0,0,4,0"/>
+                            <TextBlock Text="VIDEO" FontSize="14"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel> 
+            </Border>
+
+            <Border Grid.Row="1" BorderThickness="1" CornerRadius="10"
+                    Background="#CCFFFFFF" Padding="2" Margin="0,6,0,0">
+
+                <Grid Grid.Row="1" Grid.Column="1" Margin="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <!-- FPS Plot -->
+                        <RowDefinition Height="*" />
+                        <!-- CPU Plot -->
+                    </Grid.RowDefinitions>
+
+                    <!-- FPS Plot -->
+                    <oxy:PlotView Model="{Binding Video.FpsPlot}"
+                  Grid.Row="0"
+                  Background="Transparent"
+                  Margin="0,0,0,0"/>
+
+                    <!-- CPU Temp Plot -->
+                    <oxy:PlotView Model="{Binding Video.CpuTempPlot}"
+                  Grid.Row="1"
+                  Background="Transparent"
+                  Margin="0,0,0,0"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
